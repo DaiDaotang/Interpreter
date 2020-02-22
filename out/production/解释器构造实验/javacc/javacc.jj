@@ -1,0 +1,193 @@
+
+PARSER_BEGIN(CMMParser)
+import java.util.*;
+
+public class CMMParser{
+
+    public static void main(String[] args) throws ParseException{
+        CMMParser parser = new CMMParser(System.in);
+        parser.Start();
+    }
+}
+
+PARSER_END(CMMParser)
+
+SKIP : {
+    " "
+    |  "\t"
+    |  "\n"
+    |  "\r"
+    |  <"//" (~["\n","\r"])* ("\n" | "\r" | "\r\n")>
+    |  <"/*" (~["*"])* "*" ("*" | ~["*","/"] (~["*"])* "*")* "/">
+}
+
+//--------------------开始进行词法分析--------------------
+       ////定义关键字
+TOKEN : {
+    <IF: "if">
+    | <ELSE: "else">
+    | <WHILE: "while">
+    | <READ: "read">
+    | <WRITE: "write">
+    | <INT: "int">
+    | <REAL: "real">
+    | <CHAR: "char">
+    | <BREAK: "break">
+    | <CONTINUE: "continue">
+    | <PRINT: "print">
+    | <SCAN: "scan">
+    | <FOR: "for">
+    | <ELSEIF: "else if">
+}
+
+//定义自然数
+TOKEN : {
+    <INTEGER_LITERAL: ["1"-"9"](<DIGIT>)* | "0">
+}
+
+//定义实数
+TOKEN : {
+    <REAL_LITERAL: (<DIGIT>)+
+    | (<DIGIT>)+"."
+    | (<DIGIT>)+"."(<DIGIT>)+
+    | "."(<DIGIT>)+>
+}
+
+//定义字符
+TOKEN : {
+    <CHAR_LITERAL: "'"(<LETTER>|<DIGIT>)"'">
+}
+
+//定义字符串
+TOKEN : {
+    <CHARS: "\""(<LETTER>|<DIGIT>)*"\"">
+}
+
+//定义标识符
+TOKEN : {
+    <IDENTIFIER: <LETTER>
+    | <LETTER>(<LETTER> | <DIGIT> | "_")*(<LETTER> | <DIGIT>)+>
+    | <#LETTER: ["a"-"z", "A"-"Z"]>
+    | <#DIGIT: ["0"-"9"]>
+}
+
+//--------------------开始进行语法分析--------------------
+void Start() : {}
+{
+     Program() "#"
+}
+void Program() : {}
+{
+     StmtBlock()
+}
+void StmtBlock() : {}
+{
+     "{" (Statement())+ [";"]"}"
+}
+void Statement() : {}
+{
+     IfStmt()
+     | WhileStmt()
+     | AssignStmt()
+     | ReadStmt()
+     | WriteStmt()
+     | StmtBlock()
+     | DeclareStmt()
+     | ContinueStmt()
+     | BreakStmt()
+     | ForStmt()
+     | PrintStmt()
+     | ScanStmt()
+}
+void ScanStmt() : {}
+{
+    <SCAN>"("Variable()")"";"
+}
+void PrintStmt() : {}
+{
+    <PRINT>"("EXP()")"";"
+}
+void ForStmt() : {}
+{
+    <FOR>"("[AssignStmt()|DeclareStmt()][";"]EXP()";" AssignStmt()")"StmtBlock()
+}
+void ContinueStmt() : {}
+{
+    <CONTINUE>";"
+}
+void BreakStmt() : {}
+{
+    <BREAK>";"
+}
+void WhileStmt() : {}
+{
+    <WHILE>"("EXP()")"StmtBlock()[";"]
+}
+void ReadStmt() : {}
+{
+    <READ>Variable()";"
+}
+void WriteStmt() : {}
+{
+    <WRITE>EXP()";"
+}
+void IfStmt() : {}
+{
+    <IF>"("EXP()")"StmtBlock()(<ELSEIF>"("EXP()")"StmtBlock())*[<ELSE>"("EXP()")"StmtBlock()]
+}
+void DeclareStmt() : {}
+{
+    (<INT>|<REAL>|<CHAR>)<IDENTIFIER>("["EXP()"]")*["="ValueStmt()](","<IDENTIFIER>("["EXP()"]")*["="ValueStmt()])*
+}
+void AssignStmt() : {}
+{
+    Variable()("="ValueStmt()|"+""+"|"-""-")[";"]
+}
+void ValueStmt() : {}
+{
+    Variable()|EXP()|"{"EXP()(","EXP())*"}"|<CHARS>
+}
+void Variable() : {}
+{
+    <IDENTIFIER>("["EXP()"]")*
+}
+void EXP() : {}
+{
+    OrEXP()["||"EXP()]
+}
+void OrEXP() : {}
+{
+    AndEXP()["&&"OrEXP()]
+}
+void AndEXP() : {}
+{
+    ["!"]NotEXP()
+}
+void NotEXP() : {}
+{
+    AddEXP()(LogOp()AddEXP())*
+}
+void AddEXP() : {}
+{
+    Term()(AddOp()Term())*
+}
+void Term() : {}
+{
+    Factor()(MulOp()Factor())*
+}
+void Factor() : {}
+{
+    ("("EXP()")")|Variable()|<INTEGER_LITERAL>|<REAL_LITERAL>|<CHAR_LITERAL>
+}
+void LogOp() : {}
+{
+    ">"|"<"|">="|"<="|"<>"|"=="
+}
+void AddOp() : {}
+{
+    "+"|"-"
+}
+void MulOp() : {}
+{
+    "*"|"/"
+}
